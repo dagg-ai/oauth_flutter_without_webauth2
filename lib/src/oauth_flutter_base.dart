@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+//import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:oauth_flutter/oauth_flutter.dart';
 import 'package:oauth_flutter/src/model/secure_token_storage.dart';
@@ -85,12 +85,16 @@ class OAuth2Client<T extends SecureOAuth2Token> {
   /// The token refresher
   late final Fresh<T> fresh;
 
+  /// Callback for opening the uri *and* returning the resulting redirection url result
+  final Future<String> Function(OAuth2Client self, Uri uri) callbackFuture;
+
   /// Create an OAuth2 client
   ///
   /// One of [endpoints] or [discoveryUri] must be provided
   OAuth2Client({
     required String key,
     required this.dio,
+    required this.callbackFuture,
     Dio? oauthDio,
     OAuth2Endpoints? endpoints,
     this.discoveryUri,
@@ -199,7 +203,7 @@ class OAuth2Client<T extends SecureOAuth2Token> {
       },
     );
 
-    final callbackFuture = FlutterWebAuth2.authenticate(
+    /*final callbackFuture = FlutterWebAuth2.authenticate(
       url: uri.toString(),
       callbackUrlScheme: callbackUrlScheme,
       options: FlutterWebAuth2Options(
@@ -207,9 +211,9 @@ class OAuth2Client<T extends SecureOAuth2Token> {
         httpsHost: redirectUri.host,
         httpsPath: redirectUri.path,
       ),
-    );
+    );*/
 
-    final result = await (interceptCallback ?? callbackFuture);
+    final result = await (interceptCallback ?? callbackFuture(this, uri));
 
     return OAuthAuthorization.fromUrl(
       url: result,

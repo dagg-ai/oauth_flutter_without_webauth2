@@ -12,6 +12,7 @@ void main() async {
       token: 'https://api.fitbit.com/oauth2/token',
       revocation: 'https://api.fitbit.com/oauth2/revoke',
     ),
+    callbackFuture: (self, uri) async => uri.toString(),
     // Use `OAuth2Endpoints.base` for services with a consistent base URL
     // endpoints: OAuth2Endpoints.base('https://api.fitbit.com/oauth2'),
     redirectUri: Uri.parse('https://your-app.com/oauth2/callback'),
