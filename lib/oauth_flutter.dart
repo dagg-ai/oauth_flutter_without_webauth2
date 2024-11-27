@@ -1,4 +1,5 @@
 export 'src/oauth_flutter_base.dart';
+export 'src/oauth2_exception.dart';
 
 export 'src/model/oauth_authorization.dart';
 export 'src/model/oauth2_client_credentials.dart';

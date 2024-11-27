@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:fresh_dio/fresh_dio.dart';
 import 'package:oauth_flutter/oauth_flutter.dart';
 import 'package:oauth_flutter/src/model/secure_token_storage.dart';
+import 'package:oauth_flutter/src/oauth2_exception.dart';
 import 'package:pkce/pkce.dart';
 import 'package:uuid/uuid.dart';
 import 'package:crypto/crypto.dart' as crypto;
@@ -15,8 +16,7 @@ import 'package:crypto/crypto.dart' as crypto;
 /// Called when the refresh token has expired. An example use-case for not
 /// returning a token is to prompt the user with the option to re-auth as a
 /// Snackbar instead of forcing re-auth immediately.
-typedef ReAuthenticationCallback<T extends SecureOAuth2Token> = Future<T?>
-    Function();
+typedef ReAuthenticationCallback<T extends SecureOAuth2Token> = Future<T?> Function();
 
 /// Decoder for the OAuth2 token
 ///
@@ -107,8 +107,7 @@ class OAuth2Client<T extends SecureOAuth2Token> {
     this.redirectOriginOverride,
     this.verification = const OAuth2Verification(),
   })  : assert((endpoints != null) ^ (discoveryUri != null)),
-        tokenDecoder =
-            tokenDecoder ?? SecureOAuth2Token.fromJson as OAuth2TokenDecoder<T>,
+        tokenDecoder = tokenDecoder ?? SecureOAuth2Token.fromJson as OAuth2TokenDecoder<T>,
         oauthDio = oauthDio ?? Dio() {
     if (endpoints != null) {
       _endpoints.complete(endpoints);
@@ -149,7 +148,7 @@ class OAuth2Client<T extends SecureOAuth2Token> {
   }) async {
     Future<T> reauthenticate() async {
       final token = await onReAuthenticate();
-      if (token == null) throw Exception('Re-authenticate returned no token');
+      if (token == null) throw OAuth2Exception('Re-authenticate returned no token');
       return token;
     }
 
@@ -170,8 +169,7 @@ class OAuth2Client<T extends SecureOAuth2Token> {
     return {
       'Content-Type': 'application/x-www-form-urlencoded',
       if (credentials != null)
-        'Authorization':
-            'Basic ${base64Encode(utf8.encode('${credentials.id}:${credentials.secret}'))}',
+        'Authorization': 'Basic ${base64Encode(utf8.encode('${credentials.id}:${credentials.secret}'))}',
     };
   }
 
@@ -247,10 +245,10 @@ class OAuth2Client<T extends SecureOAuth2Token> {
       rawNonce: authorization.rawNonce,
     );
     if (verification.tokenState && token.state != authorization.state) {
-      throw Exception('State mismatch');
+      throw OAuth2Exception('State mismatch', fullUri: response.data);
     }
     if (verification.tokenNonce && token.rawNonce.sha256 != token.nonce) {
-      throw Exception('Nonce mismatch');
+      throw OAuth2Exception('Nonce mismatch', fullUri: response.data);
     }
 
     return token;
@@ -271,10 +269,9 @@ class OAuth2Client<T extends SecureOAuth2Token> {
       },
     );
 
-    final newToken =
-        _decodeToken(data: response.data, rawNonce: token.rawNonce);
+    final newToken = _decodeToken(data: response.data, rawNonce: token.rawNonce);
     if (verification.tokenNonce && newToken.nonce != token.nonce) {
-      throw Exception('Nonce mismatch');
+      throw OAuth2Exception('Nonce mismatch');
     }
 
     return newToken;
@@ -288,7 +285,7 @@ class OAuth2Client<T extends SecureOAuth2Token> {
     final endpoints = await _discover();
     final revocation = endpoints.revocation;
     if (revocation == null) {
-      throw Exception('Revocation endpoint not available');
+      throw OAuth2Exception('Revocation endpoint not available');
     }
     final credentials = this.credentials;
     final response = await oauthDio.postUri(
@@ -301,7 +298,7 @@ class OAuth2Client<T extends SecureOAuth2Token> {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to revoke token');
+      throw OAuth2Exception('Failed to revoke token');
     }
 
     await fresh.clearToken();

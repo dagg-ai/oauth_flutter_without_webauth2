@@ -1,3 +1,5 @@
+import 'package:oauth_flutter/src/oauth2_exception.dart';
+
 /// OAuth2 authorization
 class OAuthAuthorization {
   /// The authorization code
@@ -31,9 +33,9 @@ class OAuthAuthorization {
     final code = parameters['code'];
     final responseState = parameters['state'];
     if (code == null) {
-      throw Exception('No code found');
+      throw OAuth2Exception('No code found', fullUri: url);
     } else if (responseState != state) {
-      throw Exception('State mismatch');
+      throw OAuth2Exception('State mismatch', fullUri: url);
     }
     return OAuthAuthorization(
       code: code,
